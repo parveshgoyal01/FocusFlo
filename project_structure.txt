@@ -1,0 +1,198 @@
+// lib/fileHandler.ts
+import fs from 'fs';
+import path from 'path';
+
+const dataFilePath = path.join(process.cwd(), 'data', 'tasks.json');
+
+export interface Task {
+  id: string;
+  text: string;
+  completed: boolean;
+}
+
+export function readTasks(): Task[] {
+  if (!fs.existsSync(dataFilePath)) {
+    fs.writeFileSync(dataFilePath, JSON.stringify([]));
+  }
+  const fileData = fs.readFileSync(dataFilePath, 'utf-8');
+  return JSON.parse(fileData);
+}
+
+export function writeTasks(tasks: Task[]): void {
+  fs.writeFileSync(dataFilePath, JSON.stringify(tasks, null, 2));
+}
+
+// app/api/tasks/route.ts
+import { readTasks, writeTasks, Task } from '@/lib/fileHandler';
+import { NextResponse } from 'next/server';
+
+export async function GET() {
+  const tasks = readTasks();
+  return NextResponse.json(tasks);
+}
+
+export async function POST(req: Request) {
+  const tasks = readTasks();
+  const body: Partial<Task> = await req.json();
+  const newTask: Task = { id: Date.now().toString(), text: body.text || '', completed: false };
+  tasks.push(newTask);
+  writeTasks(tasks);
+  return NextResponse.json(newTask, { status: 201 });
+}
+
+// app/api/tasks/[id]/route.ts
+import { readTasks, writeTasks, Task } from '@/lib/fileHandler';
+import { NextResponse } from 'next/server';
+
+export async function PUT(req: Request, { params }: { params: { id: string } }) {
+  const tasks = readTasks();
+  const body: Partial<Task> = await req.json();
+  const updatedTasks = tasks.map(task => task.id === params.id ? { ...task, ...body } : task);
+  writeTasks(updatedTasks);
+  return NextResponse.json({ message: 'Task updated' });
+}
+
+export async function DELETE(_: Request, { params }: { params: { id: string } }) {
+  const tasks = readTasks();
+  const filteredTasks = tasks.filter(task => task.id !== params.id);
+  writeTasks(filteredTasks);
+  return NextResponse.json({ message: 'Task deleted' });
+}
+
+// app/page.tsx
+'use client';
+
+import { useState, useEffect } from 'react';
+import TaskItem from '@/components/TaskItem';
+import '@/styles/globals.css';
+
+interface Task {
+  id: string;
+  text: string;
+  completed: boolean;
+}
+
+export default function Home() {
+  const [tasks, setTasks] = useState<Task[]>([]);
+  const [taskText, setTaskText] = useState<string>('');
+
+  useEffect(() => {
+    fetch('/api/tasks')
+      .then(res => res.json())
+      .then(setTasks);
+  }, []);
+
+  const addTask = async () => {
+    if (!taskText.trim()) return;
+    const res = await fetch('/api/tasks', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ text: taskText })
+    });
+    const newTask: Task = await res.json();
+    setTasks([...tasks, newTask]);
+    setTaskText('');
+  };
+
+  const deleteTask = async (id: string) => {
+    await fetch(`/api/tasks/${id}`, { method: 'DELETE' });
+    setTasks(tasks.filter(task => task.id !== id));
+  };
+
+  const toggleComplete = async (id: string, completed: boolean) => {
+    await fetch(`/api/tasks/${id}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ completed: !completed })
+    });
+    setTasks(tasks.map(task => task.id === id ? { ...task, completed: !completed } : task));
+  };
+
+  return (
+    <div className="container">
+      <h1>FocusFlo</h1>
+      <div className="input-group">
+        <input 
+          type="text" 
+          value={taskText} 
+          onChange={(e) => setTaskText(e.target.value)} 
+          placeholder="Add a new task" 
+        />
+        <button onClick={addTask}>Add Task</button>
+      </div>
+      <ul className="task-list">
+        {tasks.map(task => (
+          <TaskItem 
+            key={task.id} 
+            task={task} 
+            onDelete={deleteTask} 
+            onToggle={toggleComplete} 
+          />
+        ))}
+      </ul>
+    </div>
+  );
+}
+
+// components/TaskItem.tsx
+interface TaskItemProps {
+  task: {
+    id: string;
+    text: string;
+    completed: boolean;
+  };
+  onDelete: (id: string) => void;
+  onToggle: (id: string, completed: boolean) => void;
+}
+
+export default function TaskItem({ task, onDelete, onToggle }: TaskItemProps) {
+  return (
+    <li className={`task-item ${task.completed ? 'completed' : ''}`}>
+      <span onClick={() => onToggle(task.id, task.completed)}>
+        {task.text}
+      </span>
+      <button onClick={() => onDelete(task.id)}>Delete</button>
+    </li>
+  );
+}
+
+// styles/globals.css
+body {
+  font-family: Arial, sans-serif;
+  background-color: #f4f4f4;
+  padding: 20px;
+}
+
+.container {
+  max-width: 600px;
+  margin: auto;
+  background: #fff;
+  padding: 20px;
+  border-radius: 8px;
+  box-shadow: 0 0 10px rgba(0,0,0,0.1);
+}
+
+.input-group {
+  display: flex;
+  gap: 10px;
+}
+
+.task-list {
+  list-style: none;
+  padding: 0;
+}
+
+.task-item {
+  display: flex;
+  justify-content: space-between;
+  padding: 10px;
+  border-bottom: 1px solid #ddd;
+}
+
+.task-item.completed span {
+  text-decoration: line-through;
+  color: gray;
+}
+
+// data/tasks.json
+[]
