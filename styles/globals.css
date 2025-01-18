@@ -1,37 +1,100 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --background: #ffffff;
+  --foreground: #171717;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --background: #0a0a0a;
+    --foreground: #ededed;
+  }
+}
+
 body {
-  font-family: Arial, sans-serif;
-  background-color: #f4f4f4;
+  color: var(--foreground);
+  background: var(--background);
+  font-family: Arial, Helvetica, sans-serif;
+}
+
+
+/* Modern Color Palette */
+:root {
+  --primary-color: #4F46E5;
+  /* Indigo */
+  --secondary-color: #EEF2FF;
+  /* Light Indigo */
+  --accent-color: #22C55E;
+  /* Green */
+  --text-color: #111827;
+  /* Dark Gray */
+  --bg-color: #F9FAFB;
+  /* Soft White */
+}
+
+body {
+  font-family: 'Poppins', sans-serif;
+  background-color: var(--bg-color);
+  color: var(--text-color);
+  margin: 0;
   padding: 20px;
 }
 
+/* Container Styling */
 .container {
   max-width: 600px;
   margin: auto;
-  background: #fff;
-  padding: 20px;
+  background: var(--secondary-color);
+  padding: 30px;
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+/* Input Group */
+.input-group input {
+  flex: 1;
+  padding: 12px;
+  border: 1px solid #ddd;
   border-radius: 8px;
-  box-shadow: 0 0 10px rgba(0,0,0,0.1);
+  font-size: 16px;
 }
 
-.input-group {
-  display: flex;
-  gap: 10px;
+.input-group button {
+  background-color: var(--primary-color);
+  color: white;
+  border: none;
+  padding: 12px 20px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
 }
 
-.task-list {
-  list-style: none;
-  padding: 0;
+.input-group button:hover {
+  background-color: #4338CA;
+  /* Darker Indigo */
 }
 
+/* Task Items */
 .task-item {
+  background-color: white;
+  padding: 12px 16px;
+  border-radius: 8px;
+  margin-bottom: 10px;
   display: flex;
   justify-content: space-between;
-  padding: 10px;
-  border-bottom: 1px solid #ddd;
+  align-items: center;
+  transition: transform 0.2s ease;
+}
+
+.task-item:hover {
+  transform: scale(1.02);
 }
 
 .task-item.completed span {
   text-decoration: line-through;
-  color: gray;
+  color: #6B7280;
+  /* Gray */
 }
-
